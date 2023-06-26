@@ -2,10 +2,15 @@ import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.registry import load_model
+from google.cloud import bigquery
+import os
+
 # from taxifare.ml_logic.preprocessor import preprocess_features
 
-
 app = FastAPI()
+
+# Create a BigQuery client
+client = bigquery.Client()
 
 # Allowing all middleware is optional, but good practice for dev purposes
 app.add_middleware(
@@ -15,31 +20,46 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
 )
+# Define BigQuery project ID, dataset ID, and table ID
+project_id = os.getenv("GCP_PROJECT")
+dataset_id = os.getenv("BQ_DATASET")
+table_id_predictions = os.getenv("BQ_DATASET_PREDICTION")
 
-app.state.model = load_model()
-model = app.state.model
 
-# http://127.0.0.1:8000/predict?pickup_datetime=2012-10-06 12:10:20&pickup_longitude=40.7614327&pickup_latitude=-73.9798156&dropoff_longitude=40.6513111&dropoff_latitude=-73.8803331&passenger_count=2
 @app.get("/predict")
-def predict(
-        # Replace by inputs for prediction
-        neighbourhood: str,  # Name of neighbourhood
-        crime_types: list,    # List of crime types to predict
-        # etc.
-    ):
+def predict(year_month: str = None, category: str = None):
+    # Construct the WHERE clause based on the query parameters
+
+    query = f"""
+        SELECT Neighborhood, year_month, {category}
+        FROM {project_id}.{dataset_id}.{table_id_predictions}
+        WHERE year_month = '{year_month}' ORDER BY year_month
     """
-    Make predictions
-    """
-    X_pred = pd.DataFrame(locals(),index=[0])
 
-    model = app.state.model
-    assert model is not None
+    # Run the query
+    query_job = client.query(query)
+    dataframe = query_job.to_dataframe()
+
+    # Convert the result to a list of dictionaries
+    result = dataframe.to_dict(orient='records')
+
+    # Return the result as JSON
+    return {"data": result}
 
 
-    X_pred_processed = X_pred #replace by: preprocess_features(X_pred)
-    pred_output = model.predict(X_pred_processed)
 
-    return dict(predictions=float(pred_output)) # replace by what model should return
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @app.get("/")
