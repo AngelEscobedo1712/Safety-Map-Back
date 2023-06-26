@@ -9,7 +9,7 @@ from tensorflow import keras
 from google.cloud import storage
 from google.cloud import bigquery
 
-from api.params import LOCAL_REGISTRY_PATH, BUCKET_NAME
+from api.params import LOCAL_REGISTRY_PATH, BUCKET_NAME, GCP_PROJECT
 
 def save_model(model: keras.Model = None) -> None:
     """
@@ -44,7 +44,7 @@ def load_model() -> keras.Model:
     """
     print(Fore.BLUE + f"\nLoad latest model from GCS..." + Style.RESET_ALL)
 
-    client = storage.Client()
+    client = storage.Client(project=GCP_PROJECT)
     blobs = list(client.get_bucket(BUCKET_NAME).list_blobs(prefix="model"))
 
     try:
