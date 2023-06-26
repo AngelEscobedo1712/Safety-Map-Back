@@ -5,7 +5,7 @@ import json
 from registry import load_model, load_data_to_bq
 from model import get_X_y_strides
 from model import INPUT_LENGTH, OUTPUT_LENGTH, SEQUENCE_STRIDE
-from model import GCP_PROJECT, BQ_DATASET, BQ_DATASET_PREDICTION
+from params import GCP_PROJECT, BQ_DATASET, BQ_DATASET_PREDICTION
 
 
 def make_the_dataframe(predictions, nom_delitos_colonias):
@@ -46,6 +46,21 @@ if __name__ == "__main__":
     predictions = model.predict(X_test)
 
     prediction_dataframe = make_the_dataframe(predictions, nom_delitos_colonias)
+
+    # Adding a "score" column
+    prediction_dataframe = prediction_dataframe.assign(score=lambda x:
+                                    x.burglary*7 +
+                                    x.danger_of_well_being*6 +
+                                    x.domestic_violence*2 +
+                                    x.fraud*1 +
+                                    x.homicide*10 +
+                                    x.property_damage*5 +
+                                    x.robbery_with_violence*8 +
+                                    x.robbery_without_violence*4 +
+                                    x.sexual_crime*9 +
+                                    x.threats*3
+                                    )
+
 
     load_data_to_bq(prediction_dataframe,
                     GCP_PROJECT,
