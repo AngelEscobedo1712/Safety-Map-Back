@@ -11,5 +11,6 @@ BUCKET_NAME = os.environ.get("BUCKET_NAME")
 BQ_DATASET= os.environ.get("BQ_DATASET")
 BQ_DATASET_PREDICTION= os.environ.get("BQ_DATASET_PREDICTION")
 
+
 ## CONSTANTS
 LOCAL_REGISTRY_PATH =  os.path.join(os.path.expanduser('~'), ".lewagon", "mlops", "training_outputs")
