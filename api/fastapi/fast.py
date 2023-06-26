@@ -22,6 +22,21 @@ project_id = os.getenv("GCP_PROJECT")
 dataset_id = os.getenv("BQ_DATASET")
 table_id = os.getenv("TABLE_ID")
 
+@app.get("/neighborhoods")
+def get_neighborhoods():
+    # Prepare the query to retrieve distinct neighborhoods
+    query = f"SELECT DISTINCT alcaldia_colonia FROM `{project_id}.{dataset_id}.coords_neighborhoods`"
+
+    # Execute the query and fetch the results
+    query_job = client.query(query)
+    rows = query_job.result()
+
+    # Extract the column values into a Python list
+    neighborhoods = [row["alcaldia_colonia"] for row in rows]
+
+    return {"neighborhoods": neighborhoods}
+
+
 
 @app.get("/get_historical_data")
 async def get_historical_data(neighborhood: str = None, year: int = None, month: str = None, category: str = None):
@@ -32,7 +47,7 @@ async def get_historical_data(neighborhood: str = None, year: int = None, month:
     if year:
         where_clauses.append(f"Year = {year}")
     if month:
-        where_clauses.append(f"Month = {month}")
+        where_clauses.append(f"Month = '{month}'")
     if category:
         where_clauses.append(f"Category = '{category}'")
 
