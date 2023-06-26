@@ -44,11 +44,14 @@ async def get_historical_data(neighborhood: str = None, year: int = None, month:
     where_clauses = []
     if neighborhood:
         where_clauses.append(f"Neighborhood = '{neighborhood}'")
-    if year:
-        where_clauses.append(f"Year = {year}")
-    if month:
+
+    if year and str(year).upper() != "ALL":
+        where_clauses.append(f"Year = '{year}'")
+
+    if month and month.upper() != "ALL":
         where_clauses.append(f"Month = '{month}'")
-    if category:
+
+    if category and category.upper() != "ALL":
         where_clauses.append(f"Category = '{category}'")
 
     # Prepare the query
