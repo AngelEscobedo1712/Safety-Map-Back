@@ -6,4 +6,4 @@ reinstall_package:
 
 
 run_api:
-	uvicorn Safety-Map.api.fastapi.fast:app --reload
+	uvicorn api.fastapi.fast:app --reload

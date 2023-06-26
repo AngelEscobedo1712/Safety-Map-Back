@@ -1,9 +1,7 @@
-import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.registry import load_model
-# from taxifare.ml_logic.preprocessor import preprocess_features
-
+from google.cloud import bigquery
+import os
 
 app = FastAPI()
 
@@ -16,30 +14,50 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-app.state.model = load_model()
-model = app.state.model
+# Create a BigQuery client
+client = bigquery.Client()
 
-# http://127.0.0.1:8000/predict?pickup_datetime=2012-10-06 12:10:20&pickup_longitude=40.7614327&pickup_latitude=-73.9798156&dropoff_longitude=40.6513111&dropoff_latitude=-73.8803331&passenger_count=2
-@app.get("/predict")
-def predict(
-        # Replace by inputs for prediction
-        neighbourhood: str,  # Name of neighbourhood
-        crime_types: list,    # List of crime types to predict
-        # etc.
-    ):
+# Define BigQuery project ID, dataset ID, and table ID
+project_id = os.getenv("GCP_PROJECT")
+dataset_id = os.getenv("BQ_DATASET")
+table_id = os.getenv("TABLE_ID")
+
+
+@app.get("/get_historical_data")
+async def get_historical_data(neighborhood: str = None, year: int = None, month: str = None, category: str = None):
+    # Construct the WHERE clause based on the query parameters
+    where_clauses = []
+    if neighborhood:
+        where_clauses.append(f"Neighborhood = '{neighborhood}'")
+    if year:
+        where_clauses.append(f"Year = {year}")
+    if month:
+        where_clauses.append(f"Month = {month}")
+    if category:
+        where_clauses.append(f"Category = '{category}'")
+
+    # Prepare the query
+    if where_clauses:
+        where_clause = " AND ".join(where_clauses)
+    else:
+        where_clause = "1 = 1"  # Condition to select all values
+
+    query = f"""
+        SELECT Latitude, Longitude
+        FROM `{project_id}.{dataset_id}.{table_id}`
+        WHERE {where_clause}
     """
-    Make predictions
-    """
-    X_pred = pd.DataFrame(locals(),index=[0])
 
-    model = app.state.model
-    assert model is not None
+    # Run the query
+    query_job = client.query(query)
+    dataframe = query_job.to_dataframe()
 
+    # Convert the result to a list of dictionaries
+    result = dataframe.to_dict(orient='records')
 
-    X_pred_processed = X_pred #replace by: preprocess_features(X_pred)
-    pred_output = model.predict(X_pred_processed)
+    # Return the result as JSON
+    return {"data": result}
 
-    return dict(predictions=float(pred_output)) # replace by what model should return
 
 
 @app.get("/")
