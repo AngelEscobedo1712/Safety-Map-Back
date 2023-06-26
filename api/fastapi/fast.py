@@ -21,6 +21,8 @@ client = bigquery.Client()
 project_id = os.getenv("GCP_PROJECT")
 dataset_id = os.getenv("BQ_DATASET")
 table_id = os.getenv("TABLE_ID")
+table_id_predictions = os.getenv("BQ_DATASET_PREDICTION")
+
 
 @app.get("/neighborhoods")
 def get_neighborhoods():
@@ -73,7 +75,28 @@ async def get_historical_data(neighborhood: str = None, year: int = None, month:
     # Return the result as JSON
     return {"data": result}
 
+  
+  
+@app.get("/predict")
+def predict(year_month: str = None, category: str = None):
 
+    query = f"""
+        SELECT Neighborhood, year_month, {category}
+        FROM {project_id}.{dataset_id}.{table_id_predictions}
+        WHERE year_month = '{year_month}' ORDER BY year_month
+    """
+
+    # Run the query
+    query_job = client.query(query)
+    dataframe = query_job.to_dataframe()
+
+    # Convert the result to a list of dictionaries
+    result = dataframe.to_dict(orient='records')
+
+    # Return the result as JSON
+    return {"data": result}
+  
+  
 
 @app.get("/")
 def root():
