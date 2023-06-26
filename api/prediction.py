@@ -5,7 +5,7 @@ import json
 from registry import load_model, load_data_to_bq
 from model import get_X_y_strides
 from model import INPUT_LENGTH, OUTPUT_LENGTH, SEQUENCE_STRIDE
-from model import GCP_PROJECT, BQ_DATASET, BQ_DATASET_PREDICTION
+from params import GCP_PROJECT, BQ_DATASET, BQ_DATASET_PREDICTION
 
 
 def make_the_dataframe(predictions, nom_delitos_colonias):
