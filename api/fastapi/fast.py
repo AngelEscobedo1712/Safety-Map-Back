@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import bigquery
 import os
+from typing import List
 
 app = FastAPI()
 
@@ -38,21 +39,31 @@ def get_neighborhoods():
 
 
 
-@app.get("/get_historical_data")
-async def get_historical_data(neighborhood: str = None, year: int = None, month: str = None, category: str = None):
+@app.post("/get_historical_data")
+async def get_historical_data(
+    neighborhoods: List[str] = None,
+    years: List[int] = None,
+    months: List[str] = None,
+    categories: List[str] = None,
+):
     # Construct the WHERE clause based on the query parameters
     where_clauses = []
-    if neighborhood:
-        where_clauses.append(f"Neighborhood = '{neighborhood}'")
 
-    if year and str(year).upper() != "ALL":
-        where_clauses.append(f"Year = '{year}'")
+    if neighborhoods:
+        neighborhood_clause = " OR ".join([f"Neighborhood = '{neighborhood}'" for neighborhood in neighborhoods])
+        where_clauses.append(f"({neighborhood_clause})")
 
-    if month and month.upper() != "ALL":
-        where_clauses.append(f"Month = '{month}'")
+    if years and "ALL" not in years:
+        year_clause = " OR ".join([f"Year = {year}" for year in years])
+        where_clauses.append(f"({year_clause})")
 
-    if category and category.upper() != "ALL":
-        where_clauses.append(f"Category = '{category}'")
+    if months and "ALL" not in months:
+        month_clause = " OR ".join([f"Month = '{month}'" for month in months])
+        where_clauses.append(f"({month_clause})")
+
+    if categories and "ALL" not in categories:
+        category_clause = " OR ".join([f"Category = '{category}'" for category in categories])
+        where_clauses.append(f"({category_clause})")
 
     # Prepare the query
     if where_clauses:
