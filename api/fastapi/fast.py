@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import bigquery
 import os
+from typing import List
 
 app = FastAPI()
 
@@ -24,6 +25,7 @@ table_id = os.getenv("TABLE_ID")
 table_id_predictions = os.getenv("BQ_DATASET_PREDICTION")
 
 
+
 @app.get("/neighborhoods")
 def get_neighborhoods():
     # Prepare the query to retrieve distinct neighborhoods
@@ -39,19 +41,35 @@ def get_neighborhoods():
     return {"neighborhoods": neighborhoods}
 
 
-
-@app.get("/get_historical_data")
-async def get_historical_data(neighborhood: str = None, year: int = None, month: str = None, category: str = None):
+@app.post("/get_historical_data")
+async def get_historical_data(
+    neighborhoods: List[str] = None,
+    years: List[int] = None,
+    months: List[str] = None,
+    categories: List[str] = None,
+):
     # Construct the WHERE clause based on the query parameters
     where_clauses = []
-    if neighborhood:
-        where_clauses.append(f"Neighborhood = '{neighborhood}'")
-    if year:
-        where_clauses.append(f"Year = {year}")
-    if month:
-        where_clauses.append(f"Month = '{month}'")
-    if category:
-        where_clauses.append(f"Category = '{category}'")
+
+    if neighborhoods:
+        neighborhood_clause = " OR ".join([
+            f"Neighborhood = '{neighborhood}'"
+            for neighborhood in neighborhoods
+        ])
+        where_clauses.append(f"({neighborhood_clause})")
+
+    if years and "ALL" not in years:
+        year_clause = " OR ".join([f"Year = {year}" for year in years])
+        where_clauses.append(f"({year_clause})")
+
+    if months and "ALL" not in months:
+        month_clause = " OR ".join([f"Month = '{month}'" for month in months])
+        where_clauses.append(f"({month_clause})")
+
+    if categories and "ALL" not in categories:
+        category_clause = " OR ".join(
+            [f"Category = '{category}'" for category in categories])
+        where_clauses.append(f"({category_clause})")
 
     # Prepare the query
     if where_clauses:
@@ -67,10 +85,13 @@ async def get_historical_data(neighborhood: str = None, year: int = None, month:
 
     # Run the query
     query_job = client.query(query)
+    print(query_job)
     dataframe = query_job.to_dataframe()
+    print(dataframe)
 
     # Convert the result to a list of dictionaries
     result = dataframe.to_dict(orient='records')
+    print(result)
 
     # Return the result as JSON
     return {"data": result}
