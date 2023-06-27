@@ -23,6 +23,7 @@ project_id = os.getenv("GCP_PROJECT")
 dataset_id = os.getenv("BQ_DATASET")
 table_id = os.getenv("TABLE_ID")
 
+
 @app.get("/neighborhoods")
 def get_neighborhoods():
     # Prepare the query to retrieve distinct neighborhoods
@@ -38,7 +39,6 @@ def get_neighborhoods():
     return {"neighborhoods": neighborhoods}
 
 
-
 @app.post("/get_historical_data")
 async def get_historical_data(
     neighborhoods: List[str] = None,
@@ -50,7 +50,10 @@ async def get_historical_data(
     where_clauses = []
 
     if neighborhoods:
-        neighborhood_clause = " OR ".join([f"Neighborhood = '{neighborhood}'" for neighborhood in neighborhoods])
+        neighborhood_clause = " OR ".join([
+            f"Neighborhood = '{neighborhood}'"
+            for neighborhood in neighborhoods
+        ])
         where_clauses.append(f"({neighborhood_clause})")
 
     if years and "ALL" not in years:
@@ -62,7 +65,8 @@ async def get_historical_data(
         where_clauses.append(f"({month_clause})")
 
     if categories and "ALL" not in categories:
-        category_clause = " OR ".join([f"Category = '{category}'" for category in categories])
+        category_clause = " OR ".join(
+            [f"Category = '{category}'" for category in categories])
         where_clauses.append(f"({category_clause})")
 
     # Prepare the query
@@ -79,18 +83,18 @@ async def get_historical_data(
 
     # Run the query
     query_job = client.query(query)
+    print(query_job)
     dataframe = query_job.to_dataframe()
+    print(dataframe)
 
     # Convert the result to a list of dictionaries
     result = dataframe.to_dict(orient='records')
+    print(result)
 
     # Return the result as JSON
     return {"data": result}
 
 
-
 @app.get("/")
 def root():
-    return {
-    'greeting': "Hello, it's working"
-    }
+    return {'greeting': "Hello, it's working"}
