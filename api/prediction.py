@@ -46,7 +46,7 @@ if __name__ == "__main__":
     predictions = model.predict(X_test)
 
     prediction_dataframe = make_the_dataframe(predictions, nom_delitos_colonias)
-
+    prediction_dataframe.to_csv("raw_data/dataframe_score.csv")
     # Adding a "score" column
     prediction_dataframe = prediction_dataframe.assign(score=lambda x:
                                     x.burglary*7 +

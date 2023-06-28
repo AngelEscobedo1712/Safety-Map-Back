@@ -96,8 +96,8 @@ async def get_historical_data(
     # Return the result as JSON
     return {"data": result}
 
-  
-  
+
+
 @app.get("/predict")
 def predict(year_month: str = None, category: str = None):
 
@@ -116,8 +116,27 @@ def predict(year_month: str = None, category: str = None):
 
     # Return the result as JSON
     return {"data": result}
-  
-  
+
+
+@app.get("/coordinates")
+def get_coordinates():
+    # Prepare the query to retrieve distinct neighborhoods
+    query = f"""SELECT *
+            FROM {project_id}.{dataset_id}.coords_neighborhoods
+    """
+    # Execute the query and fetch the results
+    query_job = client.query(query)
+
+    # make dataframe from the query
+    dataframe_coords = query_job.to_dataframe()
+    dataframe_coords.rename(columns={"alcaldia_colonia": "Neighborhood"},inplace=True)
+
+    # Convert the result to a list of dictionaries
+    result = dataframe_coords.to_dict(orient='records')
+
+    # Return the result as JSON
+    return {"data": result}
+
 
 @app.get("/")
 def root():
