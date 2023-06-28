@@ -143,10 +143,12 @@ def get_coordinates():
 
 
 @app.get("/get_crimes")
-def get_crimes(category: str = None):
+def get_crimes(year_month: str = None, category: str = None):
     # Prepare the query to retrieve the predictions with polygons
     query = f"""SELECT Neighborhood, code, {category}
-                FROM {project_id}.{dataset_id}.predictions_polygons_merged"""
+                FROM {project_id}.{dataset_id}.predictions_polygons_merged
+                WHERE year_month = '{year_month}' ORDER BY year_month"""
+
     query_job = client_gbq.query(query)
 
     df_pred_pol = query_job.to_dataframe()
