@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import bigquery
 from google.cloud import storage
+import pandas as pd
 
 import os
 from typing import List
+import json
 
 app = FastAPI()
 
@@ -143,10 +145,14 @@ def get_coordinates():
 
 
 @app.get("/get_crimes")
-def get_crimes(category: str = None):
+def get_crimes(year_month: str = None, category: str = None):
     # Prepare the query to retrieve the predictions with polygons
     query = f"""SELECT Neighborhood, code, {category}
-                FROM {project_id}.{dataset_id}.predictions_polygons_merged"""
+                FROM {project_id}.{dataset_id}.predictions_polygons_merged
+                WHERE year_month = '{year_month}' ORDER BY year_month
+                """
+
+
     query_job = client_gbq.query(query)
 
     df_pred_pol = query_job.to_dataframe()
@@ -168,14 +174,17 @@ def download_polygons():
 
     blob_geo.download_to_filename('local_geo.json')
 
-    return 'download successfully'
+    with open('local_geo.json', 'r') as file:
+        geojson_content = json.load(file)
+
+    return geojson_content
 
 
-@app.get("/get_polygons")
-def get_polygons():
-    polygon_geo = 'local_geo.json'
-    print('received succesfully')
-    return polygon_geo
+#@app.get("/get_polygons")
+#def get_polygons():
+#    polygon_geo = 'local_geo.json'
+#    print('received succesfully')
+#    return polygon_geo
 
 
 
