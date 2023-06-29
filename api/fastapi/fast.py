@@ -146,9 +146,7 @@ def get_crimes(year_month: str = None, category: str = None):
     # Prepare the query to retrieve the predictions with polygons
     query = f"""SELECT Neighborhood, code, {category}
                 FROM {project_id}.{dataset_id}.predictions_polygons_merged
-                WHERE year_month = '{year_month}' ORDER BY year_month
-                """
-
+                WHERE year_month = '{year_month}' ORDER BY year_month"""
 
     query_job = client_gbq.query(query)
 
