@@ -84,20 +84,17 @@ async def get_historical_data(
         where_clause = "1 = 1"  # Condition to select all values
 
     query = f"""
-        SELECT Latitude, Longitude
+        SELECT Latitude, Longitude, Category
         FROM `{project_id}.{dataset_id}.{table_id}`
         WHERE {where_clause}
     """
 
     # Run the query
     query_job = client_gbq.query(query)
-    print(query_job)
     dataframe = query_job.to_dataframe()
-    print(dataframe)
 
     # Convert the result to a list of dictionaries
     result = dataframe.to_dict(orient='records')
-    print(result)
 
     # Return the result as JSON
     return {"data": result}
@@ -159,7 +156,6 @@ def get_crimes(year_month: str = None, category: str = None):
 
     # Convert the result to a list of dictionaries
     result = df_pred_pol.to_dict(orient='records')
-    print(result)
 
     # Return the result as JSON
     return {"data": result}
