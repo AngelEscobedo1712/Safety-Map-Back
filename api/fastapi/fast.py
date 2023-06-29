@@ -84,7 +84,7 @@ async def get_historical_data(
         where_clause = "1 = 1"  # Condition to select all values
 
     query = f"""
-        SELECT Latitude, Longitude, Category
+        SELECT Latitude, Longitude, Category, Month
         FROM `{project_id}.{dataset_id}.{table_id}`
         WHERE {where_clause}
     """
@@ -175,23 +175,6 @@ def download_polygons():
         geojson_content = json.load(file)
 
     return geojson_content
-
-
-#@app.get("/get_polygons")
-#def get_polygons():
-#    polygon_geo = 'local_geo.json'
-#    print('received succesfully')
-#    return polygon_geo
-
-
-
-
-
-
-
-
-
-
 
 @app.get("/")
 def root():
