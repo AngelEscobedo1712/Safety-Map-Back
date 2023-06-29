@@ -128,7 +128,9 @@ def get_coordinates():
             FROM {project_id}.{dataset_id}.coords_neighborhoods
     """
     # Execute the query and fetch the results
+
     query_job = client_gbq.query(query)
+
 
     # make dataframe from the query
     dataframe_coords = query_job.to_dataframe()
@@ -139,6 +141,7 @@ def get_coordinates():
 
     # Return the result as JSON
     return {"data": result}
+
 
 
 @app.get("/get_crimes")
@@ -179,14 +182,6 @@ def download_polygons():
 #    polygon_geo = 'local_geo.json'
 #    print('received succesfully')
 #    return polygon_geo
-
-
-
-
-
-
-
-
 
 
 
