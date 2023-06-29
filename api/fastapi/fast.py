@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import bigquery
+from google.cloud import storage
+import pandas as pd
+
 import os
 from typing import List
+import json
 
 app = FastAPI()
 
@@ -16,13 +20,15 @@ app.add_middleware(
 )
 
 # Create a BigQuery client
-client = bigquery.Client()
+client_gbq = bigquery.Client()
+client_storage = storage.Client()
 
 # Define BigQuery project ID, dataset ID, and table ID
 project_id = os.getenv("GCP_PROJECT")
 dataset_id = os.getenv("BQ_DATASET")
 table_id = os.getenv("TABLE_ID")
 table_id_predictions = os.getenv("BQ_DATASET_PREDICTION")
+bucket_name = os.getenv("BUCKET_NAME")
 
 
 
@@ -32,7 +38,7 @@ def get_neighborhoods():
     query = f"SELECT DISTINCT alcaldia_colonia FROM `{project_id}.{dataset_id}.coords_neighborhoods`"
 
     # Execute the query and fetch the results
-    query_job = client.query(query)
+    query_job = client_gbq.query(query)
     rows = query_job.result()
 
     # Extract the column values into a Python list
@@ -78,20 +84,17 @@ async def get_historical_data(
         where_clause = "1 = 1"  # Condition to select all values
 
     query = f"""
-        SELECT Latitude, Longitude
+        SELECT Latitude, Longitude, Category
         FROM `{project_id}.{dataset_id}.{table_id}`
         WHERE {where_clause}
     """
 
     # Run the query
-    query_job = client.query(query)
-    print(query_job)
+    query_job = client_gbq.query(query)
     dataframe = query_job.to_dataframe()
-    print(dataframe)
 
     # Convert the result to a list of dictionaries
     result = dataframe.to_dict(orient='records')
-    print(result)
 
     # Return the result as JSON
     return {"data": result}
@@ -108,7 +111,7 @@ def predict(year_month: str = None, category: str = None):
     """
 
     # Run the query
-    query_job = client.query(query)
+    query_job = client_gbq.query(query)
     dataframe = query_job.to_dataframe()
 
     # Convert the result to a list of dictionaries
@@ -125,7 +128,9 @@ def get_coordinates():
             FROM {project_id}.{dataset_id}.coords_neighborhoods
     """
     # Execute the query and fetch the results
-    query_job = client.query(query)
+
+    query_job = client_gbq.query(query)
+
 
     # make dataframe from the query
     dataframe_coords = query_job.to_dataframe()
@@ -136,6 +141,56 @@ def get_coordinates():
 
     # Return the result as JSON
     return {"data": result}
+
+
+
+@app.get("/get_crimes")
+def get_crimes(year_month: str = None, category: str = None):
+    # Prepare the query to retrieve the predictions with polygons
+    query = f"""SELECT Neighborhood, code, {category}
+                FROM {project_id}.{dataset_id}.predictions_polygons_merged
+                WHERE year_month = '{year_month}' ORDER BY year_month"""
+
+    query_job = client_gbq.query(query)
+
+    df_pred_pol = query_job.to_dataframe()
+
+    # Convert the result to a list of dictionaries
+    result = df_pred_pol.to_dict(orient='records')
+
+    # Return the result as JSON
+    return {"data": result}
+
+
+@app.get("/download_polygons")
+def download_polygons():
+    colonias_geo = 'georef-mexico-colonia.geojson'
+
+    bucket = client_storage.get_bucket(bucket_name)
+    blob_geo = bucket.blob(colonias_geo)
+
+    blob_geo.download_to_filename('local_geo.json')
+
+    with open('local_geo.json', 'r') as file:
+        geojson_content = json.load(file)
+
+    return geojson_content
+
+
+#@app.get("/get_polygons")
+#def get_polygons():
+#    polygon_geo = 'local_geo.json'
+#    print('received succesfully')
+#    return polygon_geo
+
+
+
+
+
+
+
+
+
 
 
 @app.get("/")
