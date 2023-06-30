@@ -27,7 +27,7 @@ client_storage = storage.Client()
 project_id = os.getenv("GCP_PROJECT")
 dataset_id = os.getenv("BQ_DATASET")
 table_id = os.getenv("TABLE_ID")
-table_id_predictions = os.getenv("BQ_DATASET_PREDICTION")
+table_id_predictions = os.getenv("TABLE_ID_PREDICTIONS")
 bucket_name = os.getenv("BUCKET_NAME")
 
 
@@ -225,6 +225,41 @@ def get_plot_historical_data(
 
     # Return the result as JSON
     return {"data": result}
+
+
+
+@app.get("/get_plot_prediction_data")
+def get_plot_prediction_data():
+
+    query = f"""
+            SELECT year_month,
+            SUM(fraud) AS total_fraud,
+            SUM(threats) AS total_threats,
+            SUM(burglary) AS total_burglary,
+            SUM(homicide) AS total_homicide,
+            SUM(sexual_crime) AS total_sexual_crime,
+            SUM(property_damage) AS total_property_damage,
+            SUM(domestic_violence) AS total_domestic_violence,
+            SUM(danger_of_well_being) AS total_danger_of_well_being,
+            SUM(robbery_with_violence) AS total_robbery_with_violence,
+            SUM(robbery_without_violence) AS total_robbery_without_violence,
+            SUM(score) AS total_score
+            FROM {project_id}.{dataset_id}.{table_id_predictions}
+            WHERE year_month > '2023-06-01'
+            GROUP BY year_month
+            ORDER BY year_month;
+        """
+
+    # Run the query
+    query_job = client_gbq.query(query)
+    dataframe = query_job.to_dataframe()
+
+    # Convert the result to a list of dictionaries
+    result = dataframe.to_dict(orient='records')
+
+    # Return the result as JSON
+    return {"data": result}
+
 
 @app.get("/")
 def root():
