@@ -176,6 +176,56 @@ def download_polygons():
 
     return geojson_content
 
+
+@app.post("/get_plot_historical_data")
+def get_plot_historical_data(
+    neighborhoods: List[str] = None,
+    years: List[int] = None,
+    categories: List[str] = None,
+):
+    where_clauses = []
+
+    if neighborhoods:
+        neighborhood_clause = " OR ".join([
+            f"Neighborhood = '{neighborhood}'"
+            for neighborhood in neighborhoods
+        ])
+        where_clauses.append(f"({neighborhood_clause})")
+
+    if years and "ALL" not in years:
+        year_clause = " OR ".join([f"Year = {year}" for year in years])
+        where_clauses.append(f"({year_clause})")
+
+    if categories and "ALL" not in categories:
+        category_clause = " OR ".join(
+            [f"Category = '{category}'" for category in categories])
+        where_clauses.append(f"({category_clause})")
+
+    # Prepare the query
+    if where_clauses:
+        where_clause = " AND ".join(where_clauses)
+    else:
+        where_clause = "1 = 1"  # Condition to select all values
+
+    query = f"""SELECT Year, Month, Category, Neighborhood,
+                COUNT(*) AS TotalCrimes
+                FROM `{project_id}.{dataset_id}.{table_id}`
+                WHERE {where_clause}
+                GROUP BY Year, Month, Category, Neighborhood
+                ORDER BY Year, Month
+                """
+
+
+    # Run the query
+    query_job = client_gbq.query(query)
+    dataframe = query_job.to_dataframe()
+
+    # Convert the result to a list of dictionaries
+    result = dataframe.to_dict(orient='records')
+
+    # Return the result as JSON
+    return {"data": result}
+
 @app.get("/")
 def root():
     return {
